@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+    <h1>RP iframe</h1>
+    <div>
+        <button onclick="CheckSession('Check Session')">Click Me</button>
+    </div>
+
+    <script type="text/javascript">
+        var idpOrigin = "https://localhost:5000";
+        window.addEventListener("message", receiveMessage, false);
+
+        function CheckSession() {
+            var client_id = "domain-accounts";
+            var session_state = window.parent.document.getElementById("sessionState").innerText;
+            var message = client_id + " " + session_state;
+
+            var targetWindow = window.parent.document.getElementById("opiframe").contentWindow;
+            targetWindow.postMessage(message, idpOrigin);
+            //alert(message);
+        }
+
+        function receiveMessage(event) {
+            if (event.origin !== idpOrigin) {
+                // Origin did not come from the OP; this message must be rejected
+                alert("event.IdpOrigin is" + event.origin +
+                    "which is diferent from the defined idporigin of "
+                    + idpOrigin);
+                return;
+            }
+
+            if (event.data == "error") {
+                // should perhaps stop the loop of checking the op iframe
+                //https://github.com/IdentityModel/oidc-client-js/blob/fd838832aaacdaf1b8bd213c8e3787150f33af4d/src/CheckSessionIFrame.js
+                //https://connect2id.com/products/server/docs/api/check-session
+                alert("Error");
+            }
+
+            if (event.data === "unchanged") {
+                // User is still logged into the OP, don't need to do anything
+                alert("unchanged");
+            }
+            else { //"changed"
+                // Detected a change at OP
+                // Perform authentication with `prompt=none` to check authentication status
+                alert("changed");
+
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,48 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div>
+    <iframe id="opiframe" src="https://localhost:5000/v1/connect/checksession" style="display: none">
+    </iframe>
+    <iframe id="rpiframe" srcdoc="@ViewBag.IframeHtml"  style="display: none"></iframe>
+</div>
+
+<div class="text-center">
+    <h1 class="display-4">Welcome Hybrid</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+@using Microsoft.AspNetCore.Authentication
+
+<h2>Claims</h2>
+
+<dl>
+    @foreach (var claim in User.Claims.Where(x => x.Type == "name"))
+    {
+        <dt>@claim.Type</dt>
+        <dd>@claim.Value</dd>
+    }
+    @foreach (var claim in User.Claims.Where(x => x.Type != "name"))
+    {
+        <dt>@claim.Type</dt>
+        <dd>@claim.Value</dd>
+    }
+</dl>
+
+<h2>Properties</h2>
+
+@{
+    var props = (await Context.AuthenticateAsync()).Properties;
+    <div id="sessionState">@props.Items[".sessionState"]</div>
+    <div id="idToken">@props.Items[".Token.id_token"]</div>
+}
+
+<dl>
+    @foreach (var prop in props.Items)
+    {
+
+        <dt>@prop.Key</dt>
+        <dd>@prop.Value</dd>
+    }
+</dl>

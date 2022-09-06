@@ -1,0 +1,124 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>RP iframe for OpenID Connect Check Session</title>
+</head>
+<body>
+    <h1>RP iframe 2</h1>
+    <div>
+        <!--<button onclick="CheckSession('Check Session')">Click Me</button>-->
+    </div>
+
+    <script type="text/javascript">
+        var idpOrigin = "https://localhost:5000";
+        window.addEventListener("message", receiveMessage, false);
+        const client_id = "domain-accounts-hybrid";
+        var scheduledCheck;
+        window.onload = function () {
+            console.log("RP iframe loaded");
+          // Check shortly after onload
+          setTimeout(CheckSession, 2000);
+          // Do not forget to deregister scheduled callback using clearInterval(checkStatus)
+          scheduledCheck = setInterval(CheckSession, 1000*30); //Every 30 seconds
+        };
+
+        function CheckSession() {
+            var session_state = window.parent.document.getElementById("sessionState").innerText;
+            var message = client_id + " " + session_state;
+
+            var opIframe = window.parent.document.getElementById("opiframe").contentWindow;
+            opIframe.postMessage(message, idpOrigin);
+            
+        }
+
+        function receiveMessage(event) {
+            if (event.origin !== idpOrigin) {
+                // Origin did not come from the OP; this message must be rejected
+                console.log("event.IdpOrigin is" + event.origin +
+                    "which is diferent from the defined idporigin of "
+                    + idpOrigin);
+                return;
+            }
+
+            if (event.data == "error") {
+                // should perhaps stop the loop of checking the op iframe
+                //https://github.com/IdentityModel/oidc-client-js/blob/fd838832aaacdaf1b8bd213c8e3787150f33af4d/src/CheckSessionIFrame.js
+                //https://connect2id.com/products/server/docs/api/check-session
+                console.log("Error");
+            }
+
+            if (event.data === "unchanged") {
+                // User is still logged into the OP, don't need to do anything
+                console.log("unchanged");
+            }
+            else { //"changed"
+                // Detected a change at OP
+                // Perform authentication with `prompt=none` to check authentication status
+                console.log("changed");
+                ReactToSessionChanges();
+            }
+        }
+
+        function ReactToSessionChanges() {
+            var authorizeUrl = 'https://localhost:5000/v1/connect/authorize?client_id='+
+                client_id+'&prompt=none&redirect_uri=https://localhost:44323/signin-oidc&response_type=code id_token&scope=openid profile&nonce=1234';
+            var current_id_token = window.parent.document.getElementById("idToken").innerText;
+            authorizeUrl = authorizeUrl + "&id_token_hint=" + current_id_token;
+
+            var iframe = document.createElement('iframe');
+            iframe.src = authorizeUrl;
+            iframe.onload = function () {
+                const hash = iframe.contentWindow.location.hash.substr(1);
+                var responseParams = 
+                    hash.split('&').reduce(function (result, item){
+                      var parts = item.split('=');
+                      result[parts[0]] = parts[1];
+                      return result;
+                     }, {});
+
+                console.log("Return query Parames from Idsrv: "+ JSON.stringify(responseParams));
+                
+                //https://openid.net/specs/openid-connect-session-1_0.html#RPiframe
+                var id_token = responseParams["id_token"];
+                var sessionState = responseParams["session_state"];
+                //console.log("New Id_token: " + id_token);
+                //console.log("Current Id_token: " + current_id_token);
+
+                var new_subject = parseJwt(id_token)?.sub;
+                var current_subject = parseJwt(current_id_token)?.sub;
+                console.log("New subject: " + new_subject);
+                console.log("Current subjet: " + current_subject);
+
+                if (new_subject && new_subject === current_subject) {
+                    console.log("Existing session_state: " + window.parent.document.getElementById("sessionState").innerText);
+                    //If the RP receives an ID token for the same End-User, it SHOULD simply update the value of the session state. 
+                    window.parent.document.getElementById("sessionState").innerText = sessionState;
+                    console.log("Updated session_state: " + window.parent.document.getElementById("sessionState").innerText);
+                }
+                else {
+                     //If it doesn't receive an ID token or 
+                    // receives an ID token for another End-User, then it needs to handle this case as a logout for the original End-User.
+                    //Note: Logout from app only but not OP
+                    window.parent.location = "https://localhost:44323/Home/LogoutFromAppOnlyButNotFromOP";
+                }
+            };
+
+            document.body.appendChild(iframe);
+        }
+
+        function parseJwt (token) {
+            if(!token) 
+                return "";
+            //Is it needed to validate JWT ?           
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+        return JSON.parse(jsonPayload);
+    };
+    </script>
+
+</body>
+</html>
