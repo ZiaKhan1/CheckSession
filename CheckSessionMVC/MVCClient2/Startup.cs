@@ -40,8 +40,8 @@ namespace MVCClient2
                     .AddCookie("Cookies")
                     .AddOpenIdConnect("oidc", options =>
                     {
+                        //options.Authority = "https://cognito-idp.ap-southeast-2.amazonaws.com/ap-southeast-2_zpiNmQpmk";
                         options.Authority = "https://stage-auth.domain.com.au/v1";
-                        //options.Authority = "https://uat-auth2.domain.com.au/v1";
                         //options.Authority = "https://localhost:5000/v1";
 
                         //options.Authority = "https://localhost:5001";
@@ -49,20 +49,20 @@ namespace MVCClient2
                         //options.ClientSecret = "secret";
                         options.GetClaimsFromUserInfoEndpoint = true;
                         //options.Scope.Add("roles");zia.khan@domain.com.aualice
-                        options.Scope.Add("member-self-management");
-                        options.Scope.Add("offline_access");
+                        options.Scope.Add("email");
+                        //options.Scope.Add("offline_access");
                         
                         options.RequireHttpsMetadata = false;
 
                         //options.Authority = "https://localhost:5000/v1";
                         options.ClientId = "domain-accounts";
                         //options.ClientSecret = "b15e5ab2426a4d4692b0a8534b5f63e5"; 
-                        //options.ClientSecret = "6fdb0905518b4d2e8cc614d3e9f6ca47";
                         options.ClientSecret = "51725b2dea984643a742135ac74d92b8";
+                        //options.ClientSecret = "17c35qo97vi2tvfj945vrugnnl4lm9fsjthprfpf40j8qko9qjqj";
                         options.ResponseType = "code";
                         options.UsePkce  = false;
                         options.SaveTokens = true;
-                        options.ClaimActions.Add(new JsonKeyClaimAction(JwtClaimTypes.Scope, "member-self-management", JwtClaimTypes.Scope));
+                        //options.ClaimActions.Add(new JsonKeyClaimAction(JwtClaimTypes.Scope, "member-self-management", JwtClaimTypes.Scope));
 
                         //options.Events.OnTokenValidated = context =>
                         //{
@@ -76,12 +76,22 @@ namespace MVCClient2
                         options.Events.OnRedirectToIdentityProviderForSignOut = context  =>
                         {
                             var idTokenHint = context.HttpContext.User.FindFirst("id_token");
-                            if (idTokenHint != null)
-                                context.ProtocolMessage.IdTokenHint = idTokenHint.Value;
+                            context.ProtocolMessage.IdTokenHint = null;
+                            //if (idTokenHint != null)
+                                //context.ProtocolMessage.IdTokenHint = idTokenHint.Value;
 
-                            context.ProtocolMessage.IdTokenHint = "1b2";
+                            //context.ProtocolMessage.PostLogoutRedirectUri = "https://localhost:44367";
+
+                            //context.ProtocolMessage.IdTokenHint = "1b2";
 
                             return Task.FromResult(0);
+                        };
+                        
+                        options.Events.OnTokenResponseReceived = context =>
+                        {
+                            var refreshToken = context.TokenEndpointResponse.RefreshToken;
+                            return Task.FromResult(0);
+
                         };
                     });
 

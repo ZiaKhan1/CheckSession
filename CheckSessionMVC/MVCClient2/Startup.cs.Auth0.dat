@@ -11,12 +11,11 @@ using Microsoft.Extensions.Hosting;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Logging;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using IdentityModel;
+using Microsoft.AspNetCore.Authorization;
 
-namespace MVCClient
+namespace MVCClient2
 {
     public class Startup
     {
@@ -41,67 +40,61 @@ namespace MVCClient
                     .AddCookie("Cookies")
                     .AddOpenIdConnect("oidc", options =>
                     {
-                        //options.Authority = "https://auth.domain.com.au/v1";
-                        //options.Authority = "https://stage-auth.domain.com.au/v1";
-                        //options.Authority = "https://stage-auth2.domain.com.au/v1";
-                       // options.Authority = "https://dev-auth.domain.com.au/v1";
+                        options.Authority = "https://dev-0jtr7roel54fjelh.us.auth0.com";
+                        //options.Authority = "https://uat-auth2.domain.com.au/v1";
+                        //options.Authority = "https://localhost:5000/v1";
 
                         //options.Authority = "https://localhost:5001";
-                        //options.ClientId = "mvc";
+                        //options.ClientId = "mvc";alice
                         //options.ClientSecret = "secret";
                         options.GetClaimsFromUserInfoEndpoint = true;
-                        //options.Scope.Add("roles");
-                        options.Scope.Add("member-self-management");
-                        //options.Scope.Add("offline_access");
+                        //options.Scope.Add("roles");zia.khan@domain.com.aualice
+                        options.Scope.Add("openid profile");
+                        options.Scope.Add("offline_access");
+                        
                         options.RequireHttpsMetadata = false;
 
-                        options.Authority = "https://localhost:5000/v1";
-                        options.ClientId = "test-client";
-                        options.ClientSecret = "51725b2dea984643a742135ac74d92b8";
-                        //options.ClientId = "identity-server-admin-ui";
-                        //options.ClientSecret = "d32456d0250a4d3d9427b31eed84eea0";
-                        options.ResponseType = "code id_token";
+                        //options.Authority = "https://localhost:5000/v1";
+                        options.ClientId = "9NMyNakWSsZyGB9jVz7LmniwESm4Iean";
+                        //options.ClientSecret = "b15e5ab2426a4d4692b0a8534b5f63e5"; 
+                        //options.ClientSecret = "6fdb0905518b4d2e8cc614d3e9f6ca47";
+                        options.ClientSecret = "phJGe_7A1nj7a4yacHVET7T2kmZqfBRDMt1_42yHc1I3U-kJL1yidEdcRQkZRYse";
+                        options.ResponseType = "code";
                         options.UsePkce  = false;
                         options.SaveTokens = true;
-                        options.Scope.Add("offline_access");
                         options.ClaimActions.Add(new JsonKeyClaimAction(JwtClaimTypes.Scope, "member-self-management", JwtClaimTypes.Scope));
-                        options.Events.OnTokenValidated = context =>
-                        {
-                            //((ClaimsIdentity)context.HttpContext.User.Identity).AddClaim(new Claim("id_token",
-                            //    context.ProtocolMessage.IdToken));
 
-                            var claims = new List<Claim>
-                                {
-                                    new Claim("id_token", context.ProtocolMessage.IdToken)
-                                };
-                            var appIdentity = new ClaimsIdentity(claims);
+                        //options.Events.OnTokenValidated = context =>
+                        //{
+                        // ((ClaimsIdentity)context.HttpContext.User.Identity).AddClaim(new Claim("id_token", 
+                        //     context.ProtocolMessage.IdToken));
 
-                            context.Principal.AddIdentity(appIdentity);
-
-                            //id.AddClaim(new Claim("id_token", n.ProtocolMessage.IdToken));
-                            //n.AuthenticationTicket = new AuthenticationTicket(id,n.AuthenticationTicket.Properties);
-                            return Task.FromResult(0);
-                        };
-                        options.Events.OnRedirectToIdentityProvider = context =>
-                        {
-                            //context.ProtocolMessage.AcrValues = "http://schemas.openid.net/pape/policies/2007/06/multi-factor";
-
-                            return Task.FromResult(0);
-                        };
+                        //    //id.AddClaim(new Claim("id_token", n.ProtocolMessage.IdToken));
+                        //    //n.AuthenticationTicket = new AuthenticationTicket(id,n.AuthenticationTicket.Properties);
+                        //    return Task.FromResult(0);
+                        //};
                         options.Events.OnRedirectToIdentityProviderForSignOut = context  =>
                         {
                             var idTokenHint = context.HttpContext.User.FindFirst("id_token");
-                            if (idTokenHint != null)
-                                context.ProtocolMessage.IdTokenHint = idTokenHint.Value;
+                            context.ProtocolMessage.IdTokenHint = null;
+                            //if (idTokenHint != null)
+                                //context.ProtocolMessage.IdTokenHint = idTokenHint.Value;
+
+                            //context.ProtocolMessage.PostLogoutRedirectUri = "https://localhost:44367";
 
                             //context.ProtocolMessage.IdTokenHint = "1b2";
 
-                            context.ProtocolMessage.AcrValues = "http://schemas.openid.net/pape/policies/2007/06/multi-factor";
-
                             return Task.FromResult(0);
                         };
+                        
+                        options.Events.OnTokenResponseReceived = context =>
+                        {
+                            var refreshToken = context.TokenEndpointResponse.RefreshToken;
+                            return Task.FromResult(0);
+
+                        };
                     });
-                        //{
+
             services.AddAuthorization(options =>
             {
                 string domain = "https://dev-auth.domain.com.au/v1";
